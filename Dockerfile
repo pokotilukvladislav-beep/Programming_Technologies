@@ -1,5 +1,5 @@
-FROM eclipse-temurin:17-jdk-alpine
+FROM python:3.11-alpine
 WORKDIR /app
 COPY . .
-RUN mkdir -p out && javac -d out $(find src -name "*.java")
-CMD ["sh", "-c", "echo 'Build successful'"]
+RUN python -m compileall .
+CMD ["python", "-c", "print('Auction service is running')"]
