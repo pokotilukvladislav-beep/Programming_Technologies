@@ -14,6 +14,11 @@ jobs:
   main_job:
     runs-on: ubuntu-latest
 
+    env:
+      REGISTRY: europe-central2-docker.pkg.dev
+      REPOSITORY: flask-app-repo
+      IMAGE_NAME: flask-app
+
     steps:
       - uses: actions/checkout@v4
 
@@ -46,6 +51,21 @@ jobs:
           workload_identity_provider: ${{ secrets.GCP_WIF_PROVIDER }}
           service_account: ${{ secrets.GCP_SA_EMAIL }}
 
+      - name: Login to Google Artifact Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: oauth2accesstoken
+          password: ${{ steps.auth.outputs.access_token }}
+
+      - name: Build and push Docker image
+        id: build-image
+        run: |
+          IMAGE_URI="${{ env.REGISTRY }}/${{ secrets.GCP_PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}"
+          docker build -t "$IMAGE_URI" .
+          docker push "$IMAGE_URI"
+          echo "image_uri=$IMAGE_URI" >> $GITHUB_OUTPUT
+
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
         with:
@@ -65,9 +85,15 @@ jobs:
 
       - name: Terraform Plan
         id: plan
-        run: terraform plan -no-color -input=false -refresh=true -var="project_id=${{ secrets.GCP_PROJECT_ID }}"
+        run: >
+          terraform plan -no-color -input=false -refresh=true
+          -var="project_id=${{ secrets.GCP_PROJECT_ID }}"
+          -var="image_uri=${{ steps.build-image.outputs.image_uri }}"
         working-directory: terraform
 
       - name: Terraform Apply
-        run: terraform apply -input=false -auto-approve -var="project_id=${{ secrets.GCP_PROJECT_ID }}"
+        run: >
+          terraform apply -input=false -auto-approve
+          -var="project_id=${{ secrets.GCP_PROJECT_ID }}"
+          -var="image_uri=${{ steps.build-image.outputs.image_uri }}"
         working-directory: terraform
