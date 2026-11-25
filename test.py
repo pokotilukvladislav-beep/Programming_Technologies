@@ -12,7 +12,7 @@ class FlaskAppTests(unittest.TestCase):
         self.assertEqual(r.status_code, 200)
         self.assertEqual(
             r.get_data(),
-            b'Hello world from app Pipeline testing.'
+            b'Hello world from GCP Cloud Run v2!'
         )
 
 
