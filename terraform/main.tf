@@ -8,7 +8,7 @@ terraform {
   }
 
   backend "gcs" {
-    bucket = "lab78-tf-state-vlad-2026"
+    bucket = "lab78-tf-state-pokotiluk"
     prefix = "terraform/state"
   }
 }
