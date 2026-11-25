@@ -46,3 +46,7 @@ def place_bid(bid: Bid):
     item["current_bid"] = bid.bid_amount
     bids_history[bid.item_id].append(bid.bid_amount)
     return {"status": "bid_accepted", "current_bid": bid.bid_amount}
+
+@app.get("/")
+def read_root():
+    return {"service": "Pawnshop Auction Microservices", "status": "running"}
