@@ -2,28 +2,35 @@ pipeline {
     agent any
 
     environment {
-        DOCKER_USER = 'vladpokotyluk'
-        IMAGE_NAME = 'my-test-app'
+        IMAGE_NAME = "vladpokotyluk/my-test-app"
+        IMAGE_TAG  = "${env.BUILD_NUMBER}"
     }
 
     stages {
         stage('Check SCM') {
             steps {
                 checkout scm
-                echo "Код успішно завантажено з GitHub"
+                echo 'Код успішно завантажено з GitHub'
             }
         }
 
         stage('Build Application') {
             steps {
-                echo "Збірка додатка номер: ${BUILD_NUMBER}"
+                echo "Збірка додатка номер: ${env.BUILD_NUMBER}"
+            }
+        }
+
+        stage('Test') {
+            steps {
+                echo 'Запуск модульних тестів...'
+                sh 'docker run --rm -v "${WORKSPACE}":/app -w /app python:3.11-alpine python -m unittest discover -v'
             }
         }
 
         stage('Build Docker Image') {
             steps {
                 script {
-                    dockerImage = docker.build("${DOCKER_USER}/${IMAGE_NAME}:${BUILD_NUMBER}")
+                    dockerImage = docker.build("${IMAGE_NAME}:${IMAGE_TAG}")
                 }
             }
         }
@@ -31,9 +38,8 @@ pipeline {
         stage('Push to Docker Hub') {
             steps {
                 script {
-                    docker.withRegistry('https://index.docker.io/v1/', 'dockerhub-credentials') {
-                        dockerImage.push("${BUILD_NUMBER}")
-                        dockerImage.push("latest")
+                    docker.withRegistry('', 'dockerhub-credentials') {
+                        dockerImage.push()
                     }
                 }
             }
@@ -42,13 +48,13 @@ pipeline {
 
     post {
         always {
-            echo "Конвеєр завершив роботу."
+            echo 'Конвеєр завершив роботу.'
         }
         success {
-            echo "Образ успішно зібрано та відправлено на Docker Hub!"
+            echo 'Тести пройдено, образ успішно зібрано та завантажено на Docker Hub!'
         }
         failure {
-            echo "Помилка при виконанні конвеєра."
+            echo 'Помилка при виконанні конвеєра або провалені тести.'
         }
     }
 }
