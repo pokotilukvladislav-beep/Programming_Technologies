@@ -23,7 +23,7 @@ pipeline {
         stage('Test') {
             steps {
                 echo 'Запуск модульних тестів...'
-                sh 'docker run --rm -v "${WORKSPACE}":/app -w /app python:3.11-alpine python -m unittest discover -v'
+                sh 'docker run --rm -v "${WORKSPACE}":/app -w /app python:3.11-alpine sh -c "pip install --no-cache-dir -r requirements.txt && python -m unittest discover -v"'
             }
         }
 
